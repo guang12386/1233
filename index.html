@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>雷达图</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.js"></script>
+    <style>
+        body {
+            background-color: #333;
+            color: white;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        canvas {
+            background-color: #222;
+            border: 2px solid #fff;
+            border-radius: 50%;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="radarCanvas" width="500" height="500"></canvas>
+
+    <script>
+        const canvas = document.getElementById("radarCanvas");
+        const ctx = canvas.getContext("2d");
+
+        // WebSocket 连接到后端
+        const socket = io("ws://154.9.252.215:5010"); // 使用你的服务器 IP 和端口
+
+        // 用于存储玩家坐标
+        let players = [];
+
+        // 监听坐标更新
+        socket.on("update_positions", function (data) {
+            players = data;  // 更新玩家坐标
+            drawRadar();  // 重绘雷达图
+        });
+
+        // 绘制雷达图
+        function drawRadar() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height); // 清空画布
+
+            // 画雷达外圈
+            ctx.strokeStyle = "#bbb";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(250, 250, 200, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // 画雷达网格
+            ctx.strokeStyle = "#555";
+            ctx.lineWidth = 1;
+            for (let i = 1; i <= 4; i++) {
+                ctx.beginPath();
+                ctx.arc(250, 250, i * 50, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            // 画十字线
+            ctx.beginPath();
+            ctx.moveTo(50, 250);
+            ctx.lineTo(450, 250);
+            ctx.moveTo(250, 50);
+            ctx.lineTo(250, 450);
+            ctx.stroke();
+
+            // 画玩家
+            players.forEach(player => {
+                let relativeX = Math.max(-200, Math.min(player.x * 2, 200));  // 玩家 X 坐标
+                let relativeY = Math.max(-200, Math.min(player.y * 2, 200));  // 玩家 Y 坐标
+
+                let canvasX = 250 + relativeX;
+                let canvasY = 250 - relativeY;
+
+                ctx.fillStyle = "red";
+                ctx.beginPath();
+                ctx.arc(canvasX, canvasY, 5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = "white";
+                ctx.font = "12px Arial";
+                ctx.fillText(`P${player.id}`, canvasX + 10, canvasY);
+            });
+        }
+    </script>
+
+</body>
+
+</html>
